@@ -243,7 +243,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
         try:
             await query.edit_message_text(
-                text=text,  # text должен быть определен ранее в логике
+                text=text,
                 reply_markup=reply_markup
             )
         except Exception as e:
@@ -261,7 +261,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 
 def main() -> None:
-    application = Application.builder().token().build()
+    application = Application.builder().token("").build()
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
