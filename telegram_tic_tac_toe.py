@@ -1,5 +1,7 @@
 import logging
 import asyncio
+from dotenv import load_dotenv
+import os
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes
 
@@ -10,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 games = {}
 
+load_dotenv()
 
 def find_best_move(board, bot_symbol):
     best_score = -float('inf')
@@ -313,7 +316,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 
 def main() -> None:
-    application = Application.builder().token().build()
+    application = Application.builder().token(os.getenv("BOT_TOKEN")).build()
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
