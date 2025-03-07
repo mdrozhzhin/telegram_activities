@@ -1,5 +1,5 @@
 import logging
-import random
+import asyncio
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes
 
@@ -9,6 +9,52 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 games = {}
+
+
+def find_best_move(board, bot_symbol):
+    best_score = -float('inf')
+    best_move = None
+    player_symbol = 'X' if bot_symbol == 'O' else 'O'
+
+    for i in range(9):
+        if board[i] == " ":
+            board[i] = bot_symbol
+            score = minimax(board, 0, False, player_symbol, bot_symbol)
+            board[i] = " "
+            if score > best_score:
+                best_score = score
+                best_move = i
+    return best_move
+
+
+def minimax(board, depth, is_maximizing, player_symbol, bot_symbol):
+    result = check_winner(board)
+
+    if result == bot_symbol:
+        return 1
+    elif result == player_symbol:
+        return -1
+    elif result == "draw":
+        return 0
+
+    if is_maximizing:
+        best_score = -float('inf')
+        for i in range(9):
+            if board[i] == " ":
+                board[i] = bot_symbol
+                score = minimax(board, depth + 1, False, player_symbol, bot_symbol)
+                board[i] = " "
+                best_score = max(score, best_score)
+        return best_score
+    else:
+        best_score = float('inf')
+        for i in range(9):
+            if board[i] == " ":
+                board[i] = player_symbol
+                score = minimax(board, depth + 1, True, player_symbol, bot_symbol)
+                board[i] = " "
+                best_score = min(score, best_score)
+        return best_score
 
 
 def create_board():
@@ -42,9 +88,8 @@ def check_winner(board):
     return None
 
 
-def bot_move(board):
-    empty = [i for i, cell in enumerate(board) if cell == " "]
-    return random.choice(empty) if empty else None
+def bot_move(board, bot_symbol):
+    return find_best_move(board, bot_symbol)
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -159,8 +204,10 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         })
 
         if symbol == "O":
-            bot_position = bot_move(games[chat_id]["board"])
-            games[chat_id]["board"][bot_position] = "X"
+            bot_symbol = "X"
+
+            bot_position = bot_move(games[chat_id]["board"], bot_symbol)
+            games[chat_id]["board"][bot_position] = bot_symbol
             games[chat_id]["current_player"] = "O"
 
         keyboard = [[InlineKeyboardButton(cell, callback_data=str(i + j)) for j, cell in
@@ -214,16 +261,21 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
             elif game["mode"] == "bot":
 
-                game["current_player"] = 'O' if current_symbol == 'X' else 'X'
-
                 bot_symbol = 'X' if game["player_symbol"] == 'O' else 'O'
-                bot_position = bot_move(game["board"])
+                bot_position = bot_move(game["board"], bot_symbol)
+
+                await query.edit_message_text("🤖 Бот думает...")
+                await asyncio.sleep(1)  # Не забудьте импортировать asyncio
+
+                bot_position = bot_move(game["board"], bot_symbol)
+
                 if bot_position is not None:
                     game["board"][bot_position] = bot_symbol
                     winner = check_winner(game["board"])
+
                     if winner:
                         game["game_over"] = True
-                        text = "Победил бот! 🤖" if winner == bot_symbol else "Ничья! 🟨"
+                        text = "🤖 Победил бот!" if winner == bot_symbol else "Ничья! 🟨"
                     else:
                         game["current_player"] = game["player_symbol"]
                         text = f"Ваш ход ({game['player_symbol']})"
@@ -261,7 +313,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 
 def main() -> None:
-    application = Application.builder().token("").build()
+    application = Application.builder().token("7275734478:AAFJwC-Rdt8A39OOQR-j5xpRFiucPV4CTfw").build()
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
