@@ -313,7 +313,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 
 def main() -> None:
-    application = Application.builder().token("7275734478:AAFJwC-Rdt8A39OOQR-j5xpRFiucPV4CTfw").build()
+    application = Application.builder().token().build()
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
